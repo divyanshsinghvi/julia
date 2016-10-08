@@ -95,29 +95,29 @@ end
 
     # SSH URL using scp-like syntax
     m = match(LibGit2.URL_REGEX, "user@server:project.git")
-    @test m[:scheme] == nothing
+    @test m[:scheme] === nothing
     @test m[:user] == "user"
-    @test m[:password] == nothing
+    @test m[:password] === nothing
     @test m[:host] == "server"
-    @test m[:port] == nothing
+    @test m[:port] === nothing
     @test m[:path] == "project.git"
 
     # Realistic example from GitHub using HTTPS
     m = match(LibGit2.URL_REGEX, "https://github.com/JuliaLang/Example.jl.git")
     @test m[:scheme] == "https"
-    @test m[:user] == nothing
-    @test m[:password] == nothing
+    @test m[:user] === nothing
+    @test m[:password] === nothing
     @test m[:host] == "github.com"
-    @test m[:port] == nothing
+    @test m[:port] === nothing
     @test m[:path] == "/JuliaLang/Example.jl.git"
 
     # Realistic example from GitHub using SSH
     m = match(LibGit2.URL_REGEX, "git@github.com:JuliaLang/Example.jl.git")
-    @test m[:scheme] == nothing
+    @test m[:scheme] === nothing
     @test m[:user] == "git"
-    @test m[:password] == nothing
+    @test m[:password] === nothing
     @test m[:host] == "github.com"
-    @test m[:port] == nothing
+    @test m[:port] === nothing
     @test m[:path] == "JuliaLang/Example.jl.git"
 
     # Make sure usernames can contain special characters
@@ -321,17 +321,17 @@ mktempdir() do dir
                     @test LibGit2.name(brref) == "refs/heads/master"
                     @test LibGit2.shortname(brref) == master_branch
                     @test LibGit2.ishead(brref)
-                    @test LibGit2.upstream(brref) === nothing
+                    @test LibGit2.upstream(brref) ==== nothing
                     @test repo.ptr == LibGit2.owner(brref).ptr
                     @test brnch == master_branch
                     @test LibGit2.headname(repo) == master_branch
                     LibGit2.branch!(repo, test_branch, string(commit_oid1), set_head=false)
 
-                    @test LibGit2.lookup_branch(repo, test_branch, true) === nothing
+                    @test LibGit2.lookup_branch(repo, test_branch, true) ==== nothing
                     tbref = LibGit2.lookup_branch(repo, test_branch, false)
                     try
                         @test LibGit2.shortname(tbref) == test_branch
-                        @test LibGit2.upstream(tbref) === nothing
+                        @test LibGit2.upstream(tbref) ==== nothing
                     finally
                         finalize(tbref)
                     end
@@ -532,7 +532,7 @@ mktempdir() do dir
             LibGit2.with(LibGit2.GitIndex(repo)) do idx
                 i = find(test_file, idx)
                 @test !isnull(i)
-                @test idx[get(i)] !== nothing
+                @test idx[get(i)] !=== nothing
             end
 
             # check non-existent file status
@@ -786,8 +786,8 @@ mktempdir() do dir
                         rethrow(err)
                     finally
                         rm(logfile)
-                        sshp !== nothing && kill(sshp)
-                        agentp !== nothing && kill(agentp)
+                        sshp !=== nothing && kill(sshp)
+                        agentp !=== nothing && kill(agentp)
                     end
                 end
             end

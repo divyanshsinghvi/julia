@@ -7,7 +7,7 @@ using ..Terminals
 import ..Terminals: raw!, width, height, cmove, getX,
                        getY, clear_line, beep
 
-import Base: ensureroom, peek, show, AnyDict
+import Base: ensureroom, peek, show
 
 abstract TextInterface
 abstract ModeState
@@ -770,7 +770,7 @@ end
 # }
 #
 # However, that's not what we want, because now "ac" is
-# is not defined. We need to fix this up and turn it into
+# not defined. We need to fix this up and turn it into
 #
 # {
 #   '*' => {
@@ -782,7 +782,7 @@ end
 #   }
 # }
 #
-# i.e. copy over the appropraite default subdict
+# i.e. copy over the appropriate default subdict
 #
 
 # deep merge where target has higher precedence
@@ -898,13 +898,13 @@ end
 
 function validate_keymap(keymap)
     for key in keys(keymap)
-        visited_keys = Any[key]
+        visited_keys = String[string(key)]
         v = getEntry(keymap,key)
         while isa(v,KeyAlias)
             if v.seq in visited_keys
                 error("Alias cycle detected in keymap")
             end
-            push!(visited_keys,v.seq)
+            push!(visited_keys,string(v.seq))
             v = getEntry(keymap,v.seq)
         end
     end
@@ -918,8 +918,8 @@ function keymap{D<:Dict}(keymaps::Array{D})
 end
 
 const escape_defaults = merge!(
-    AnyDict(Char(i) => nothing for i=vcat(1:26, 28:31)), # Ignore control characters by default
-    AnyDict( # And ignore other escape sequences by default
+    Dict{String, Any}(string(Char(i)) => nothing for i=vcat(1:26, 28:31)), # Ignore control characters by default
+    Dict{String, Any}( # And ignore other escape sequences by default
         "\e*" => nothing,
         "\e[*" => nothing,
         "\eO*" => nothing,
@@ -950,9 +950,9 @@ const escape_defaults = merge!(
         "\eOF"  => KeyAlias("\e[F"),
     ),
     # set mode commands
-    AnyDict("\e[$(c)h" => nothing for c in 1:20),
+    Dict{String, Any}("\e[$(c)h" => nothing for c in 1:20),
     # reset mode commands
-    AnyDict("\e[$(c)l" => nothing for c in 1:20)
+    Dict{String, Any}("\e[$(c)l" => nothing for c in 1:20)
     )
 
 function write_response_buffer(s::PromptState, data)
@@ -1177,19 +1177,19 @@ end
 
 function setup_search_keymap(hp)
     p = HistoryPrompt(hp)
-    pkeymap = AnyDict(
+    pkeymap = Dict{String, Any}(
         "^R"      => (s,data,c)->(history_set_backward(data, true); history_next_result(s, data)),
         "^S"      => (s,data,c)->(history_set_backward(data, false); history_next_result(s, data)),
-        '\r'      => (s,o...)->accept_result(s, p),
-        '\n'      => '\r',
+        "\r"      => (s,o...)->accept_result(s, p),
+        "\n"      => '\r',
         # Limited form of tab completions
-        '\t'      => (s,data,c)->(complete_line(s); update_display_buffer(s, data)),
+        "\t"      => (s,data,c)->(complete_line(s); update_display_buffer(s, data)),
         "^L"      => (s,data,c)->(Terminals.clear(terminal(s)); update_display_buffer(s, data)),
 
         # Backspace/^H
-        '\b'      => (s,data,c)->(edit_backspace(data.query_buffer) ?
+        "\b"      => (s,data,c)->(edit_backspace(data.query_buffer) ?
                         update_display_buffer(s, data) : beep(terminal(s))),
-        127       => KeyAlias('\b'),
+        "\x7f"    => KeyAlias('\b'),
         # Meta Backspace
         "\e\b"    => (s,data,c)->(edit_delete_prev_word(data.query_buffer) ?
                         update_display_buffer(s, data) : beep(terminal(s))),
@@ -1252,7 +1252,7 @@ function setup_search_keymap(hp)
         "*"       => (s,data,c)->(edit_insert(data.query_buffer, c); update_display_buffer(s, data))
     )
     p.keymap_dict = keymap([pkeymap, escape_defaults])
-    skeymap = AnyDict(
+    skeymap = Dict{String, Any}(
         "^R"    => (s,o...)->(enter_search(s, p, true)),
         "^S"    => (s,o...)->(enter_search(s, p, false)),
     )
@@ -1323,9 +1323,9 @@ function bracketed_paste(s)
 end
 
 const default_keymap =
-AnyDict(
+Dict{String, Any}(
     # Tab
-    '\t' => (s,o...)->begin
+    "\t" => (s,o...)->begin
         buf = buffer(s)
         # Yes, we are ignoring the possiblity
         # the we could be in the middle of a multi-byte
@@ -1347,7 +1347,7 @@ AnyDict(
         refresh_line(s)
     end,
     # Enter
-    '\r' => (s,o...)->begin
+    "\r" => (s,o...)->begin
         if on_enter(s) || (eof(buffer(s)) && s.key_repeats > 1)
             commit_line(s)
             return :done
@@ -1355,10 +1355,10 @@ AnyDict(
             edit_insert(s, '\n')
         end
     end,
-    '\n' => KeyAlias('\r'),
+    "\n" => KeyAlias('\r'),
     # Backspace/^H
-    '\b' => (s,o...)->edit_backspace(s),
-    127 => KeyAlias('\b'),
+    "\b" => (s,o...)->edit_backspace(s),
+    "\x7f" => KeyAlias('\b'),
     # Meta Backspace
     "\e\b" => (s,o...)->edit_delete_prev_word(s),
     "\e\x7f" => "\e\b",
@@ -1431,7 +1431,7 @@ AnyDict(
     "^T" => (s,o...)->edit_transpose(s)
 )
 
-const history_keymap = AnyDict(
+const history_keymap = Dict{String, Any}(
     "^P" => (s,o...)->(history_prev(s, mode(s).hist)),
     "^N" => (s,o...)->(history_next(s, mode(s).hist)),
     # Up Arrow
@@ -1445,7 +1445,7 @@ const history_keymap = AnyDict(
 )
 
 const prefix_history_keymap = merge!(
-    AnyDict(
+    Dict{String, Any}(
         # Up Arrow
         "\e[A" => (s,data,c)->history_prev_prefix(data, data.histprompt.hp, data.prefix),
         # Down Arrow
@@ -1465,17 +1465,17 @@ const prefix_history_keymap = merge!(
         "\e[200~" => "*"
     ),
     # VT220 editing commands
-    AnyDict("\e[$(n)~" => "*" for n in 1:8),
+    Dict{String, Any}("\e[$(n)~" => "*" for n in 1:8),
     # set mode commands
-    AnyDict("\e[$(c)h" => "*" for c in 1:20),
+    Dict{String, Any}("\e[$(c)h" => "*" for c in 1:20),
     # reset mode commands
-    AnyDict("\e[$(c)l" => "*" for c in 1:20)
+    Dict{String, Any}("\e[$(c)l" => "*" for c in 1:20)
 )
 
 function setup_prefix_keymap(hp, parent_prompt)
     p = PrefixHistoryPrompt(hp, parent_prompt)
     p.keymap_dict = keymap([prefix_history_keymap])
-    pkeymap = AnyDict(
+    pkeymap = Dict{String, Any}(
         # Up Arrow
         "\e[A" => (s,o...)->(edit_move_up(s) || enter_prefix_search(s, p, true)),
         # Down Arrow

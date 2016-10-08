@@ -920,7 +920,7 @@ end
 
 function run_frontend(repl::LineEditREPL, backend)
     d = REPLDisplay(repl)
-    dopushdisplay = repl.specialdisplay === nothing && !in(d,Base.Multimedia.displays)
+    dopushdisplay = repl.specialdisplay === nothing && !any(x->x===d,Base.Multimedia.displays)
     dopushdisplay && pushdisplay(d)
     if !isdefined(repl,:interface)
         interface = repl.interface = setup_interface(repl)
